@@ -609,3 +609,84 @@ body {
         font-size: 24px;
     }
 }
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    body {
+        background: #121212;
+        color: #e0e0e0;
+    }
+
+    .container {
+        background: #1e1e1e;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+    }
+
+    .header {
+        background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%);
+        color: white;
+    }
+
+    .sign-out-btn {
+        background: rgba(255,255,255,0.2);
+        border: 2px solid white;
+        color: white;
+    }
+
+    .stats-grid {
+        background: #2c2c2c;
+        border-bottom: 2px solid #444;
+    }
+
+    .stat-card {
+        background: #2a2a2a;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    }
+
+    .filters {
+        background: #2c2c2c;
+        border-bottom: 2px solid #444;
+    }
+
+    .filter-group select, .search-input {
+        background: #3a3a3a;
+        border: 2px solid #555;
+        color: #e0e0e0;
+    }
+
+    .filter-group select:hover, .search-input:hover {
+        border-color: #8f94fb;
+    }
+
+    .filter-group select:focus, .search-input:focus {
+        border-color: #8f94fb;
+        box-shadow: 0 0 0 3px rgba(143,148,251,0.1);
+    }
+
+    .quick-actions {
+        background: #2c2c2c;
+    }
+
+    .action-button {
+        background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%);
+        color: white;
+    }
+
+    .toggle-view-btn {
+        background: #6c757d;
+        color: white;
+    }
+
+    .progress-bar {
+        background: #2c2c2c;
+    }
+
+    .progress-container {
+        background: #444;
+    }
+
+        .assignment-card {
+            background: #2a2a2a;
+            border: 2px solid #444;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+        }
+    }
