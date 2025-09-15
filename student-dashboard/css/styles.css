@@ -10,34 +10,7 @@ body {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
     padding: 20px;
-}
-
-/* Authentication Container */
-.auth-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-}
-
-.auth-card {
-    background: white;
-    border-radius: 20px;
-    padding: 40px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    text-align: center;
-    max-width: 400px;
-}
-
-.auth-card h1 {
-    color: #333;
-    margin-bottom: 20px;
-    font-size: 2em;
-}
-
-.auth-card p {
-    color: #666;
-    margin-bottom: 30px;
+    transition: background 0.3s ease;
 }
 
 /* Main Container */
@@ -48,6 +21,7 @@ body {
     border-radius: 20px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     overflow: hidden;
+    transition: all 0.3s ease;
 }
 
 /* Header */
@@ -69,21 +43,32 @@ body {
     font-size: 1.1em;
 }
 
-.sign-out-btn {
+/* Theme Toggle Button */
+.theme-toggle {
     position: absolute;
     top: 20px;
     right: 20px;
     background: rgba(255,255,255,0.2);
     color: white;
     border: 2px solid white;
-    padding: 8px 20px;
+    padding: 8px 16px;
     border-radius: 20px;
     cursor: pointer;
-    transition: background 0.3s;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
 }
 
-.sign-out-btn:hover {
+.theme-toggle:hover {
     background: rgba(255,255,255,0.3);
+    transform: translateY(-2px);
+}
+
+.theme-icon {
+    font-size: 18px;
 }
 
 /* Stats Summary Grid */
@@ -108,6 +93,14 @@ body {
 .stat-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.stat-card.stat-overdue {
+    background: #ffebee;
+}
+
+.stat-card.stat-overdue .stat-number {
+    color: #c62828;
 }
 
 .stat-number {
@@ -153,6 +146,7 @@ body {
     background: white;
     cursor: pointer;
     transition: border-color 0.3s;
+    color: #333;
 }
 
 .search-input {
@@ -178,6 +172,7 @@ body {
     gap: 10px;
     flex-wrap: wrap;
     align-items: center;
+    background: #f8f9fa;
 }
 
 .action-button {
@@ -227,9 +222,10 @@ body {
 /* Assignments Container */
 .assignments {
     padding: 30px;
+    background: white;
 }
 
-/* Enhanced Assignment Card Styling */
+/* Assignment Card Styling */
 .assignment-card {
     padding: 20px;
     margin-bottom: 20px;
@@ -237,8 +233,8 @@ body {
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
-    border-left: 4px solid transparent;
     border: 2px solid #e9ecef;
+    border-left: 5px solid #667eea;
 }
 
 .assignment-card:hover {
@@ -248,27 +244,27 @@ body {
 
 /* Type-based color coding */
 .assignment-card[data-type="Reading"] {
-    border-left: 5px solid #4CAF50;
+    border-left-color: #4CAF50;
     background: #f8fff9;
 }
 
 .assignment-card[data-type="Homework"] {
-    border-left: 5px solid #2196F3;
+    border-left-color: #2196F3;
     background: #f5f9ff;
 }
 
 .assignment-card[data-type="Test/Quiz"] {
-    border-left: 5px solid #f44336;
+    border-left-color: #f44336;
     background: #fff5f5;
 }
 
 .assignment-card[data-type="Project"] {
-    border-left: 5px solid #FF9800;
+    border-left-color: #FF9800;
     background: #fff8f3;
 }
 
 .assignment-card[data-type="Classwork"] {
-    border-left: 5px solid #9C27B0;
+    border-left-color: #9C27B0;
     background: #faf5ff;
 }
 
@@ -311,12 +307,6 @@ body {
     gap: 5px;
     font-size: 14px;
     color: #666;
-}
-
-.meta-icon {
-    width: 16px;
-    height: 16px;
-    opacity: 0.7;
 }
 
 /* Type Badge */
@@ -407,11 +397,6 @@ body {
     color: #e65100;
 }
 
-.priority-normal {
-    background: #f5f5f5;
-    color: #666;
-}
-
 /* Description Styling */
 .assignment-description {
     position: relative;
@@ -421,7 +406,6 @@ body {
     font-size: 14px;
 }
 
-/* Truncated Description with Show More */
 .description-content {
     overflow: hidden;
     transition: max-height 0.3s ease;
@@ -440,10 +424,6 @@ body {
     right: 0;
     height: 20px;
     background: linear-gradient(transparent, white);
-}
-
-.description-content.expanded {
-    max-height: none;
 }
 
 .show-more-btn {
@@ -556,6 +536,161 @@ body {
     }
 }
 
+/* DARK MODE STYLES - Class-based, not media query */
+body.dark-mode {
+    background: linear-gradient(135deg, #1a1b3a 0%, #2d2b55 100%);
+}
+
+body.dark-mode .container {
+    background: #2d2d3d;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+}
+
+body.dark-mode .header {
+    background: linear-gradient(135deg, #5a5fb8 0%, #7a7fc8 100%);
+}
+
+body.dark-mode .stats-grid {
+    background: #363644;
+    border-bottom-color: #4a4a5a;
+}
+
+body.dark-mode .stat-card {
+    background: #3f3f4f;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+body.dark-mode .stat-number {
+    color: #8b92ff;
+}
+
+body.dark-mode .stat-label {
+    color: #b0b0b0;
+}
+
+body.dark-mode .stat-card.stat-overdue {
+    background: #4a3333;
+}
+
+body.dark-mode .filters {
+    background: #363644;
+    border-bottom-color: #4a4a5a;
+}
+
+body.dark-mode .filter-group label {
+    color: #d0d0d0;
+}
+
+body.dark-mode .filter-group select,
+body.dark-mode .search-input {
+    background: #454555;
+    border-color: #5a5a6a;
+    color: #e0e0e0;
+}
+
+body.dark-mode .filter-group select:hover,
+body.dark-mode .search-input:hover {
+    border-color: #8b92ff;
+}
+
+body.dark-mode .quick-actions {
+    background: #363644;
+}
+
+body.dark-mode .progress-bar {
+    background: #363644;
+}
+
+body.dark-mode .progress-container {
+    background: #4a4a5a;
+}
+
+body.dark-mode .assignments {
+    background: #2d2d3d;
+}
+
+/* Dark Mode Assignment Cards - READABLE VERSION */
+body.dark-mode .assignment-card {
+    background: #f0f0f0 !important;  /* Light gray background */
+    color: #1a1a1a !important;        /* Dark text */
+    border-color: #d0d0d0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .assignment-card:hover {
+    background: #f5f5f5 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Maintain type colors in dark mode */
+body.dark-mode .assignment-card[data-type="Reading"] {
+    border-left-color: #66bb6a;
+    background: #e8f5e9 !important;
+}
+
+body.dark-mode .assignment-card[data-type="Homework"] {
+    border-left-color: #42a5f5;
+    background: #e3f2fd !important;
+}
+
+body.dark-mode .assignment-card[data-type="Test/Quiz"] {
+    border-left-color: #ef5350;
+    background: #ffebee !important;
+}
+
+body.dark-mode .assignment-card[data-type="Project"] {
+    border-left-color: #ffa726;
+    background: #fff3e0 !important;
+}
+
+body.dark-mode .assignment-card[data-type="Classwork"] {
+    border-left-color: #ab47bc;
+    background: #f3e5f5 !important;
+}
+
+body.dark-mode .assignment-card.completed {
+    opacity: 0.6;
+    background: #e0e0e0 !important;
+}
+
+body.dark-mode .assignment-title {
+    color: #1a1a1a !important;
+}
+
+body.dark-mode .assignment-meta {
+    border-bottom-color: #c0c0c0;
+}
+
+body.dark-mode .meta-item {
+    color: #555 !important;
+}
+
+body.dark-mode .assignment-description,
+body.dark-mode .description-content {
+    color: #333 !important;
+}
+
+body.dark-mode .description-content.truncated::after {
+    background: linear-gradient(transparent, #f0f0f0);
+}
+
+body.dark-mode .show-more-btn {
+    color: #5a5fb8;
+}
+
+body.dark-mode .show-more-btn:hover {
+    color: #4a4fa8;
+}
+
+body.dark-mode .loading,
+body.dark-mode .no-assignments {
+    color: #b0b0b0;
+}
+
+body.dark-mode .error {
+    color: #ff6b6b;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .stats-grid {
@@ -578,6 +713,11 @@ body {
         font-size: 1.8em;
     }
     
+    .theme-toggle {
+        position: static;
+        margin-top: 15px;
+    }
+    
     .assignment-card {
         padding: 15px;
     }
@@ -593,268 +733,7 @@ body {
         gap: 8px;
     }
     
-    .description-content {
-        font-size: 13px;
-    }
-    
     .quick-actions {
         justify-content: center;
-    }
-    
-    .stat-card {
-        padding: 15px;
-    }
-    
-    .stat-number {
-        font-size: 24px;
-    }
-}
-
-/* IMPROVED Dark Mode Support - More Readable */
-@media (prefers-color-scheme: dark) {
-    body {
-        background: linear-gradient(135deg, #1a1b3a 0%, #2d2b55 100%);
-        color: #e0e0e0;
-    }
-
-    .container {
-        background: #2d2d3d;  /* Lighter than before */
-        box-shadow: 0 20px 60px rgba(0,0,0,0.7);
-    }
-
-    .header {
-        background: linear-gradient(135deg, #5a5fb8 0%, #7a7fc8 100%);
-        color: white;
-    }
-
-    .sign-out-btn {
-        background: rgba(255,255,255,0.15);
-        border: 2px solid rgba(255,255,255,0.8);
-        color: white;
-    }
-
-    .sign-out-btn:hover {
-        background: rgba(255,255,255,0.25);
-    }
-
-    .stats-grid {
-        background: #363644;  /* Lighter */
-        border-bottom: 2px solid #4a4a5a;
-    }
-
-    .stat-card {
-        background: #3f3f4f;  /* Much lighter */
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-        color: #e0e0e0;
-    }
-
-    .stat-number {
-        color: #8b92ff;  /* Brighter purple */
-    }
-
-    .stat-label {
-        color: #b0b0b0;
-    }
-
-    .filters {
-        background: #363644;
-        border-bottom: 2px solid #4a4a5a;
-    }
-
-    .filter-group label {
-        color: #d0d0d0;
-    }
-
-    .filter-group select, .search-input {
-        background: #454555;  /* Lighter input background */
-        border: 2px solid #5a5a6a;
-        color: #e0e0e0;
-    }
-
-    .filter-group select:hover, .search-input:hover {
-        border-color: #8b92ff;
-    }
-
-    .filter-group select:focus, .search-input:focus {
-        border-color: #8b92ff;
-        box-shadow: 0 0 0 3px rgba(139,146,255,0.2);
-    }
-
-    .quick-actions {
-        background: #363644;
-    }
-
-    .action-button {
-        background: linear-gradient(135deg, #5a5fb8 0%, #7a7fc8 100%);
-        color: white;
-    }
-
-    .toggle-view-btn {
-        background: #6c757d;
-        color: white;
-    }
-
-    .progress-bar {
-        background: #363644;
-    }
-
-    .progress-container {
-        background: #4a4a5a;
-    }
-
-    .progress-fill {
-        background: linear-gradient(135deg, #5a5fb8 0%, #7a7fc8 100%);
-    }
-
-    .assignments {
-        background: #2d2d3d;
-    }
-
-    /* IMPROVED Assignment Cards - Much More Readable */
-    .assignment-card {
-        background: #3a3a4a !important;  /* Significantly lighter */
-        border: 2px solid #4a4a5a;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    }
-
-    .assignment-card:hover {
-        background: #424252 !important;  /* Lighter on hover */
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    }
-
-    /* Maintain type colors but adjust backgrounds */
-    .assignment-card[data-type="Reading"] {
-        border-left: 5px solid #66bb6a;  /* Brighter green */
-        background: #3a423a !important;
-    }
-
-    .assignment-card[data-type="Homework"] {
-        border-left: 5px solid #42a5f5;  /* Brighter blue */
-        background: #3a3e45 !important;
-    }
-
-    .assignment-card[data-type="Test/Quiz"] {
-        border-left: 5px solid #ef5350;  /* Brighter red */
-        background: #423a3a !important;
-    }
-
-    .assignment-card[data-type="Project"] {
-        border-left: 5px solid #ffa726;  /* Brighter orange */
-        background: #42403a !important;
-    }
-
-    .assignment-card[data-type="Classwork"] {
-        border-left: 5px solid #ab47bc;  /* Brighter purple */
-        background: #3e3a42 !important;
-    }
-
-    .assignment-card.completed {
-        opacity: 0.6;
-        background: #353545 !important;
-    }
-
-    .assignment-title {
-        color: #f0f0f0;  /* Brighter text */
-        font-weight: 600;
-    }
-
-    .assignment-meta {
-        border-bottom: 1px solid #4a4a5a;
-    }
-
-    .meta-item {
-        color: #c0c0c0;  /* Brighter meta text */
-    }
-
-    /* Type badges with better contrast */
-    .type-badge.reading {
-        background: #2e7d32;
-        color: #e8f5e9;
-    }
-
-    .type-badge.homework {
-        background: #1565c0;
-        color: #e3f2fd;
-    }
-
-    .type-badge.test-quiz {
-        background: #c62828;
-        color: #ffebee;
-    }
-
-    .type-badge.project {
-        background: #e65100;
-        color: #fff3e0;
-    }
-
-    .type-badge.classwork {
-        background: #6a1b9a;
-        color: #f3e5f5;
-    }
-
-    /* Due indicators with better visibility */
-    .due-today {
-        background: #8b3a3a;
-        color: #ffcccc;
-    }
-
-    .due-tomorrow {
-        background: #8b7355;
-        color: #ffe5b4;
-    }
-
-    .due-soon {
-        background: #3a6b8b;
-        color: #b4e5ff;
-    }
-
-    .due-normal {
-        background: #4a4a5a;
-        color: #d0d0d0;
-    }
-
-    .assignment-description {
-        color: #d0d0d0;  /* Much brighter description text */
-    }
-
-    .description-content.truncated::after {
-        background: linear-gradient(transparent, #3a3a4a);
-    }
-
-    .show-more-btn {
-        color: #8b92ff;
-    }
-
-    .show-more-btn:hover {
-        color: #a0a7ff;
-    }
-
-    .btn-complete {
-        background: #66bb6a;
-        color: white;
-    }
-
-    .btn-complete:hover {
-        background: #57a85c;
-    }
-
-    .btn-complete.completed {
-        background: #5a5a6a;
-        color: #c0c0c0;
-    }
-
-    /* Utility classes for dark mode */
-    .loading, .no-assignments {
-        color: #b0b0b0;
-    }
-
-    .error {
-        color: #ff6b6b;
-    }
-
-    .feedback-message {
-        background: #66bb6a;
-        color: white;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     }
 }
