@@ -7,7 +7,7 @@ let filtered = [];
 // AUTHENTICATION
 // ============================================================================
 
-// Called by Google Identity Services after sign-in
+// This function name must match the data-callback in your HTML
 function handleCredentialResponse(response) {
     // Decode the JWT credential
     const responsePayload = decodeJwtResponse(response.credential);
@@ -24,7 +24,7 @@ function handleCredentialResponse(response) {
     }
 }
 
-// Decode JWT token from Google
+// Helper function to decode JWT
 function decodeJwtResponse(token) {
     const base64Url = token.split('.')[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -33,6 +33,7 @@ function decodeJwtResponse(token) {
     }).join(''));
     return JSON.parse(jsonPayload);
 }
+
 
 // Sign out function
 function signOut() {
