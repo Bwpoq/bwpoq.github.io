@@ -609,65 +609,83 @@ body {
         font-size: 24px;
     }
 }
-/* Dark Mode Support */
+
+/* IMPROVED Dark Mode Support - More Readable */
 @media (prefers-color-scheme: dark) {
     body {
-        background: #121212;
+        background: linear-gradient(135deg, #1a1b3a 0%, #2d2b55 100%);
         color: #e0e0e0;
     }
 
     .container {
-        background: #1e1e1e;
+        background: #2d2d3d;  /* Lighter than before */
         box-shadow: 0 20px 60px rgba(0,0,0,0.7);
     }
 
     .header {
-        background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%);
+        background: linear-gradient(135deg, #5a5fb8 0%, #7a7fc8 100%);
         color: white;
     }
 
     .sign-out-btn {
-        background: rgba(255,255,255,0.2);
-        border: 2px solid white;
+        background: rgba(255,255,255,0.15);
+        border: 2px solid rgba(255,255,255,0.8);
         color: white;
     }
 
+    .sign-out-btn:hover {
+        background: rgba(255,255,255,0.25);
+    }
+
     .stats-grid {
-        background: #2c2c2c;
-        border-bottom: 2px solid #444;
+        background: #363644;  /* Lighter */
+        border-bottom: 2px solid #4a4a5a;
     }
 
     .stat-card {
-        background: #2a2a2a;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+        background: #3f3f4f;  /* Much lighter */
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        color: #e0e0e0;
+    }
+
+    .stat-number {
+        color: #8b92ff;  /* Brighter purple */
+    }
+
+    .stat-label {
+        color: #b0b0b0;
     }
 
     .filters {
-        background: #2c2c2c;
-        border-bottom: 2px solid #444;
+        background: #363644;
+        border-bottom: 2px solid #4a4a5a;
+    }
+
+    .filter-group label {
+        color: #d0d0d0;
     }
 
     .filter-group select, .search-input {
-        background: #3a3a3a;
-        border: 2px solid #555;
+        background: #454555;  /* Lighter input background */
+        border: 2px solid #5a5a6a;
         color: #e0e0e0;
     }
 
     .filter-group select:hover, .search-input:hover {
-        border-color: #8f94fb;
+        border-color: #8b92ff;
     }
 
     .filter-group select:focus, .search-input:focus {
-        border-color: #8f94fb;
-        box-shadow: 0 0 0 3px rgba(143,148,251,0.1);
+        border-color: #8b92ff;
+        box-shadow: 0 0 0 3px rgba(139,146,255,0.2);
     }
 
     .quick-actions {
-        background: #2c2c2c;
+        background: #363644;
     }
 
     .action-button {
-        background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%);
+        background: linear-gradient(135deg, #5a5fb8 0%, #7a7fc8 100%);
         color: white;
     }
 
@@ -677,16 +695,166 @@ body {
     }
 
     .progress-bar {
-        background: #2c2c2c;
+        background: #363644;
     }
 
     .progress-container {
-        background: #444;
+        background: #4a4a5a;
     }
 
-        .assignment-card {
-            background: #2a2a2a;
-            border: 2px solid #444;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-        }
+    .progress-fill {
+        background: linear-gradient(135deg, #5a5fb8 0%, #7a7fc8 100%);
     }
+
+    .assignments {
+        background: #2d2d3d;
+    }
+
+    /* IMPROVED Assignment Cards - Much More Readable */
+    .assignment-card {
+        background: #3a3a4a !important;  /* Significantly lighter */
+        border: 2px solid #4a4a5a;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .assignment-card:hover {
+        background: #424252 !important;  /* Lighter on hover */
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Maintain type colors but adjust backgrounds */
+    .assignment-card[data-type="Reading"] {
+        border-left: 5px solid #66bb6a;  /* Brighter green */
+        background: #3a423a !important;
+    }
+
+    .assignment-card[data-type="Homework"] {
+        border-left: 5px solid #42a5f5;  /* Brighter blue */
+        background: #3a3e45 !important;
+    }
+
+    .assignment-card[data-type="Test/Quiz"] {
+        border-left: 5px solid #ef5350;  /* Brighter red */
+        background: #423a3a !important;
+    }
+
+    .assignment-card[data-type="Project"] {
+        border-left: 5px solid #ffa726;  /* Brighter orange */
+        background: #42403a !important;
+    }
+
+    .assignment-card[data-type="Classwork"] {
+        border-left: 5px solid #ab47bc;  /* Brighter purple */
+        background: #3e3a42 !important;
+    }
+
+    .assignment-card.completed {
+        opacity: 0.6;
+        background: #353545 !important;
+    }
+
+    .assignment-title {
+        color: #f0f0f0;  /* Brighter text */
+        font-weight: 600;
+    }
+
+    .assignment-meta {
+        border-bottom: 1px solid #4a4a5a;
+    }
+
+    .meta-item {
+        color: #c0c0c0;  /* Brighter meta text */
+    }
+
+    /* Type badges with better contrast */
+    .type-badge.reading {
+        background: #2e7d32;
+        color: #e8f5e9;
+    }
+
+    .type-badge.homework {
+        background: #1565c0;
+        color: #e3f2fd;
+    }
+
+    .type-badge.test-quiz {
+        background: #c62828;
+        color: #ffebee;
+    }
+
+    .type-badge.project {
+        background: #e65100;
+        color: #fff3e0;
+    }
+
+    .type-badge.classwork {
+        background: #6a1b9a;
+        color: #f3e5f5;
+    }
+
+    /* Due indicators with better visibility */
+    .due-today {
+        background: #8b3a3a;
+        color: #ffcccc;
+    }
+
+    .due-tomorrow {
+        background: #8b7355;
+        color: #ffe5b4;
+    }
+
+    .due-soon {
+        background: #3a6b8b;
+        color: #b4e5ff;
+    }
+
+    .due-normal {
+        background: #4a4a5a;
+        color: #d0d0d0;
+    }
+
+    .assignment-description {
+        color: #d0d0d0;  /* Much brighter description text */
+    }
+
+    .description-content.truncated::after {
+        background: linear-gradient(transparent, #3a3a4a);
+    }
+
+    .show-more-btn {
+        color: #8b92ff;
+    }
+
+    .show-more-btn:hover {
+        color: #a0a7ff;
+    }
+
+    .btn-complete {
+        background: #66bb6a;
+        color: white;
+    }
+
+    .btn-complete:hover {
+        background: #57a85c;
+    }
+
+    .btn-complete.completed {
+        background: #5a5a6a;
+        color: #c0c0c0;
+    }
+
+    /* Utility classes for dark mode */
+    .loading, .no-assignments {
+        color: #b0b0b0;
+    }
+
+    .error {
+        color: #ff6b6b;
+    }
+
+    .feedback-message {
+        background: #66bb6a;
+        color: white;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+}
