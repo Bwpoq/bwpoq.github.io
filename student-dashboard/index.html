@@ -1,94 +1,423 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
+    <title>Student Assignment Dashboard</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Assignment Dashboard</title>
-    
-    <!-- Google Identity Services for Authentication -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    
-    <!-- Our Styles -->
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- Login Screen (shown first) -->
-    <div id="login-container" class="auth-container">
-        <div class="auth-card">
-            <h1>📚 Student Assignment Tracker</h1>
-            <p>Sign in with your Google account to view assignments</p>
-            <div id="g_id_onload"
-                 data-client_id="15394522833-u4g4tr1cdkftf2a0fo554h2hvruh2nbl.apps.googleusercontent.com"
-                 data-callback="handleCredentialResponse"
-                 data-auto_prompt="false">
-            </div>
-            <div class="g_id_signin" 
-                 data-type="standard" 
-                 data-size="large"
-                 data-theme="outline"
-                 data-text="signin_with">
-            </div>
-        </div>
-    </div>
-
-    <!-- Main App (hidden until authenticated) -->
-    <div id="app" class="container" style="display:none;">
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Header -->
         <div class="header">
-            <h1>📚 My Assignments</h1>
-            <div class="subtitle">Stay on top of your schoolwork!</div>
-            <button class="sign-out-btn" onclick="signOut()">Sign Out</button>
+            <h1>📚 Student Assignment Tracker</h1>
+            <p class="subtitle">Stay on top of your schoolwork!</p>
         </div>
 
+        <!-- Stats Summary -->
+        <div class="stats-grid" id="statsGrid">
+            <!-- Stats will be dynamically inserted here -->
+        </div>
+
+        <!-- Filters Section -->
         <div class="filters">
             <div class="filter-group">
                 <label for="subjectFilter">Subject:</label>
                 <select id="subjectFilter" onchange="applyFilters()">
-                    <option value="all">All Subjects</option>
+                    <option value="">All Subjects</option>
                 </select>
             </div>
-
+            
             <div class="filter-group">
                 <label for="typeFilter">Type:</label>
                 <select id="typeFilter" onchange="applyFilters()">
-                    <option value="all">All Types</option>
+                    <option value="">All Types</option>
                     <option value="Test/Quiz">Tests & Quizzes</option>
-                    <option value="Project">Projects</option>
                     <option value="Homework">Homework</option>
+                    <option value="Project">Projects</option>
                     <option value="Reading">Reading</option>
                     <option value="Classwork">Classwork</option>
                 </select>
             </div>
-
+            
             <div class="filter-group">
                 <label for="statusFilter">Status:</label>
                 <select id="statusFilter" onchange="applyFilters()">
-                    <option value="all">All</option>
-                    <option value="Pending">Not Done</option>
-                    <option value="Completed">Completed</option>
+                    <option value="">All</option>
+                    <option value="pending">Pending</option>
+                    <option value="completed">Completed</option>
                 </select>
             </div>
-        </div>
-
-        <div class="quick-actions">
-            <button class="action-button" onclick="showTodayOnly()">📅 Today Only</button>
-            <button class="action-button" onclick="showThisWeek()">📆 This Week</button>
-            <button class="action-button" onclick="showTests()">📝 Tests Only</button>
-            <button class="action-button" onclick="syncData()">🔄 Sync Data</button>
-        </div>
-
-        <div class="progress-bar">
-            <div class="progress-container">
-                <div class="progress-fill" id="progressBar">0% Complete</div>
+            
+            <div class="filter-group" style="flex: 1;">
+                <label for="searchInput">Search:</label>
+                <input type="text" id="searchInput" class="search-input" 
+                       placeholder="Search assignments..." onkeyup="applyFilters()">
             </div>
         </div>
 
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <button class="action-button" onclick="filterToday()">📅 Today Only</button>
+            <button class="action-button" onclick="filterThisWeek()">📆 This Week</button>
+            <button class="action-button" onclick="filterTests()">🎯 Tests Only</button>
+            <button class="action-button" onclick="syncData()">🔄 Sync Data</button>
+            <button class="action-button toggle-view-btn" onclick="toggleCompactView()">📋 Compact View</button>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-bar">
+            <div class="progress-container">
+                <div class="progress-fill" id="progressBar">Loading...</div>
+            </div>
+        </div>
+
+        <!-- Assignments List -->
         <div class="assignments" id="assignmentsList">
             <div class="loading">Loading assignments...</div>
         </div>
     </div>
 
-    <!-- Load our JavaScript -->
-    <script src="config.js"></script>
-    <script src="js/app.js"></script>
+    <!-- JavaScript -->
+    <script>
+    // Configuration
+    const API_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
+    const API_KEY = 'Patio-Slingshot-Gloater-Neglector-Brick1-Catcall-Legible';
+    
+    // Global variables
+    let allAssignments = [];
+    let filteredAssignments = [];
+    let isCompactView = false;
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        loadAssignments();
+        setupEventListeners();
+        
+        // Check for saved compact view preference
+        if (localStorage.getItem('compactView') === 'true') {
+            toggleCompactView();
+        }
+    });
+
+    // Load assignments from API
+    async function loadAssignments() {
+        try {
+            const response = await fetch(`${API_URL}?api=true&action=getAssignments&key=${API_KEY}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                allAssignments = data.data;
+                filteredAssignments = [...allAssignments];
+                
+                renderStats();
+                renderAssignments();
+                updateProgress();
+                populateFilters();
+            } else {
+                showError('Failed to load assignments');
+            }
+        } catch (error) {
+            console.error('Error loading assignments:', error);
+            showError('Error connecting to server');
+        }
+    }
+
+    // Render statistics summary
+    function renderStats() {
+        const stats = {
+            dueToday: allAssignments.filter(a => a.isDueToday).length,
+            dueThisWeek: allAssignments.filter(a => a.isDueThisWeek).length,
+            completed: allAssignments.filter(a => a.status === 'Completed').length,
+            tests: allAssignments.filter(a => a.isTestQuiz).length,
+            overdue: allAssignments.filter(a => a.isOverdue).length,
+            total: allAssignments.length
+        };
+        
+        const statsHtml = `
+            <div class="stat-card">
+                <div class="stat-number">${stats.dueToday}</div>
+                <div class="stat-label">Due Today</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">${stats.dueThisWeek}</div>
+                <div class="stat-label">This Week</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">${stats.completed}</div>
+                <div class="stat-label">Completed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">${stats.tests}</div>
+                <div class="stat-label">Tests/Quizzes</div>
+            </div>
+            ${stats.overdue > 0 ? `
+            <div class="stat-card" style="background: #ffebee;">
+                <div class="stat-number" style="color: #c62828;">${stats.overdue}</div>
+                <div class="stat-label">Overdue</div>
+            </div>` : ''}
+        `;
+        
+        document.getElementById('statsGrid').innerHTML = statsHtml;
+    }
+
+    // Render assignments list
+    function renderAssignments() {
+        const container = document.getElementById('assignmentsList');
+        
+        if (filteredAssignments.length === 0) {
+            container.innerHTML = '<div class="no-assignments">No assignments found</div>';
+            return;
+        }
+        
+        const assignmentsHtml = filteredAssignments.map(assignment => 
+            renderAssignmentCard(assignment)
+        ).join('');
+        
+        container.innerHTML = assignmentsHtml;
+    }
+
+    // Render individual assignment card
+    function renderAssignmentCard(assignment) {
+        // Truncate description
+        const maxLength = isCompactView ? 100 : 150;
+        const description = assignment.description || 'No description provided';
+        const isTruncated = description.length > maxLength;
+        const truncatedDesc = isTruncated ? 
+            description.substring(0, maxLength) + '...' : description;
+        
+        // Determine type class
+        const typeClass = assignment.type.toLowerCase().replace(/[\/\s]/g, '-');
+        
+        // Determine due date styling
+        let dueClass = 'due-normal';
+        let dueLabel = `📆 ${assignment.daysUntilDue} days`;
+        
+        if (assignment.isDueToday) {
+            dueClass = 'due-today';
+            dueLabel = '⚠️ Due Today';
+        } else if (assignment.isDueTomorrow) {
+            dueClass = 'due-tomorrow';
+            dueLabel = '⏰ Due Tomorrow';
+        } else if (assignment.daysUntilDue <= 3) {
+            dueClass = 'due-soon';
+            dueLabel = `📅 ${assignment.daysUntilDue} days`;
+        } else if (assignment.isOverdue) {
+            dueClass = 'due-today';
+            dueLabel = '❌ Overdue';
+        }
+        
+        const isCompleted = assignment.status === 'Completed';
+        
+        return `
+            <div class="assignment-card ${isCompleted ? 'completed' : ''}" 
+                 data-type="${assignment.type}" data-uid="${assignment.uid}">
+                <div class="assignment-header">
+                    <h3 class="assignment-title">${assignment.title}</h3>
+                    <div class="assignment-meta">
+                        <span class="meta-item">
+                            📚 ${assignment.course}
+                        </span>
+                        <span class="type-badge ${typeClass}">
+                            ${assignment.type}
+                        </span>
+                        <span class="due-indicator ${dueClass}">
+                            ${dueLabel}
+                        </span>
+                        ${assignment.priority !== 'Normal' ? 
+                            `<span class="priority-indicator priority-${assignment.priority.toLowerCase()}">
+                                ⚡ ${assignment.priority}
+                            </span>` : ''
+                        }
+                    </div>
+                </div>
+                
+                <div class="assignment-description">
+                    <div class="description-content ${isTruncated ? 'truncated' : ''}" 
+                         id="desc-${assignment.uid}">
+                        ${truncatedDesc}
+                    </div>
+                    ${isTruncated ? 
+                        `<button class="show-more-btn" 
+                                onclick="toggleDescription('${assignment.uid}', this)"
+                                data-full="${encodeURIComponent(description)}"
+                                data-truncated="${encodeURIComponent(truncatedDesc)}">
+                            Show more ▼
+                        </button>` : ''
+                    }
+                </div>
+                
+                <div class="assignment-actions">
+                    <button class="action-btn btn-complete ${isCompleted ? 'completed' : ''}"
+                            onclick="toggleComplete('${assignment.uid}')">
+                        ${isCompleted ? '✓ Completed' : 'Mark Complete'}
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    // Toggle description expansion
+    function toggleDescription(uid, button) {
+        const descElement = document.getElementById(`desc-${uid}`);
+        const isExpanded = !descElement.classList.contains('truncated');
+        
+        if (isExpanded) {
+            // Collapse
+            descElement.classList.add('truncated');
+            descElement.textContent = decodeURIComponent(button.getAttribute('data-truncated'));
+            button.textContent = 'Show more ▼';
+        } else {
+            // Expand
+            descElement.classList.remove('truncated');
+            descElement.textContent = decodeURIComponent(button.getAttribute('data-full'));
+            button.textContent = 'Show less ▲';
+        }
+    }
+
+    // Toggle assignment completion status
+    async function toggleComplete(uid) {
+        const assignment = allAssignments.find(a => a.uid === uid);
+        if (!assignment) return;
+        
+        const newStatus = assignment.status === 'Completed' ? 'Pending' : 'Completed';
+        
+        try {
+            const response = await fetch(
+                `${API_URL}?api=true&action=updateStatus&key=${API_KEY}&uid=${uid}&status=${newStatus}`
+            );
+            const data = await response.json();
+            
+            if (data.success) {
+                assignment.status = newStatus;
+                renderAssignments();
+                updateProgress();
+                renderStats();
+                showFeedback(`Assignment marked as ${newStatus}`);
+            }
+        } catch (error) {
+            console.error('Error updating status:', error);
+            showError('Failed to update status');
+        }
+    }
+
+    // Update progress bar
+    function updateProgress() {
+        const total = filteredAssignments.length;
+        const completed = filteredAssignments.filter(a => a.status === 'Completed').length;
+        const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+        
+        const progressBar = document.getElementById('progressBar');
+        progressBar.style.width = `${percentage}%`;
+        progressBar.textContent = `${completed}/${total} Complete (${percentage}%)`;
+    }
+
+    // Populate filter dropdowns
+    function populateFilters() {
+        // Subject filter
+        const subjects = [...new Set(allAssignments.map(a => a.course))].sort();
+        const subjectFilter = document.getElementById('subjectFilter');
+        subjects.forEach(subject => {
+            const option = document.createElement('option');
+            option.value = subject;
+            option.textContent = subject;
+            subjectFilter.appendChild(option);
+        });
+    }
+
+    // Apply filters
+    function applyFilters() {
+        const subject = document.getElementById('subjectFilter').value;
+        const type = document.getElementById('typeFilter').value;
+        const status = document.getElementById('statusFilter').value;
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        
+        filteredAssignments = allAssignments.filter(assignment => {
+            if (subject && assignment.course !== subject) return false;
+            if (type && assignment.type !== type) return false;
+            if (status === 'pending' && assignment.status === 'Completed') return false;
+            if (status === 'completed' && assignment.status !== 'Completed') return false;
+            if (search && !assignment.title.toLowerCase().includes(search) && 
+                !assignment.course.toLowerCase().includes(search)) return false;
+            return true;
+        });
+        
+        renderAssignments();
+        updateProgress();
+    }
+
+    // Quick filter functions
+    function filterToday() {
+        filteredAssignments = allAssignments.filter(a => a.isDueToday);
+        renderAssignments();
+        updateProgress();
+    }
+
+    function filterThisWeek() {
+        filteredAssignments = allAssignments.filter(a => a.isDueThisWeek);
+        renderAssignments();
+        updateProgress();
+    }
+
+    function filterTests() {
+        filteredAssignments = allAssignments.filter(a => a.isTestQuiz);
+        renderAssignments();
+        updateProgress();
+    }
+
+    // Sync data
+    async function syncData() {
+        showFeedback('Syncing data...');
+        
+        try {
+            const response = await fetch(`${API_URL}?api=true&action=sync&key=${API_KEY}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                showFeedback('Sync complete! Reloading...');
+                setTimeout(() => loadAssignments(), 1500);
+            } else {
+                showError('Sync failed');
+            }
+        } catch (error) {
+            console.error('Sync error:', error);
+            showError('Failed to sync data');
+        }
+    }
+
+    // Toggle compact view
+    function toggleCompactView() {
+        isCompactView = !isCompactView;
+        document.body.classList.toggle('compact-view');
+        localStorage.setItem('compactView', isCompactView);
+        renderAssignments();
+    }
+
+    // Setup event listeners
+    function setupEventListeners() {
+        // Refresh data every 5 minutes
+        setInterval(loadAssignments, 5 * 60 * 1000);
+    }
+
+    // Show feedback message
+    function showFeedback(message) {
+        const existing = document.querySelector('.feedback-message');
+        if (existing) existing.remove();
+        
+        const feedback = document.createElement('div');
+        feedback.className = 'feedback-message';
+        feedback.textContent = message;
+        document.body.appendChild(feedback);
+        
+        setTimeout(() => feedback.remove(), 3000);
+    }
+
+    // Show error message
+    function showError(message) {
+        const container = document.getElementById('assignmentsList');
+        container.innerHTML = `<div class="error">❌ ${message}</div>`;
+    }
+    </script>
 </body>
 </html>
