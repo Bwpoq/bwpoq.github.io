@@ -168,6 +168,13 @@
     const PAGE_SIZE = 50;
     let renderCount = PAGE_SIZE;
 
+    // ---- Persistent completion overrides (local storage for GitHub Pages) ----
+    const COMPLETIONS_KEY = 'completedOverrides_v1';
+    /** Shape: { [uid]: { status: 'Completed'|'Pending', updatedAt: ISO, needsSync?: true } } */
+    let completedOverrides = {};
+    try { completedOverrides = JSON.parse(localStorage.getItem(COMPLETIONS_KEY) || '{}'); } catch { completedOverrides = {}; }
+    function saveOverrides() { localStorage.setItem(COMPLETIONS_KEY, JSON.stringify(completedOverrides)); }
+
     // Debouncer
     function debounce(fn, delay=200) {
       let t;
@@ -203,6 +210,14 @@
         return d ? fmtDay.format(d) : '';
     }
 
+    // Tight timeout wrapper to avoid long UI stalls
+    async function fetchWithTimeout(url, opts = {}, timeoutMs = 5000) {
+      const ctrl = new AbortController();
+      const id = setTimeout(() => ctrl.abort(), timeoutMs);
+      try { return await fetch(url, { ...opts, signal: ctrl.signal }); }
+      finally { clearTimeout(id); }
+    }
+
     // =========================
     // Init
     // =========================
@@ -232,6 +247,9 @@
         // Debounce search input -> applyFilters
         const searchInput = document.getElementById('searchInput');
         searchInput.addEventListener('input', debounce(onFilterChange, 200));
+
+        // Try syncing any pending local changes when we come back online
+        window.addEventListener('online', syncPendingOverrides);
     });
 
     // =========================
@@ -260,6 +278,15 @@
 
             if (data.success) {
                 allAssignments = data.data || [];
+
+                // Apply local completion overrides so UI is instant and persistent
+                allAssignments.forEach(a => {
+                  const o = completedOverrides[a.uid];
+                  if (o && (o.status === 'Completed' || o.status === 'Pending')) {
+                    a.status = o.status;
+                  }
+                });
+
                 filteredAssignments = [...allAssignments];
 
                 // Render UI
@@ -271,6 +298,9 @@
                 // Update last sync badge if we have it saved
                 const lastSyncIso = localStorage.getItem('lastSyncISO');
                 updateLastSyncBadge(lastSyncIso ? new Date(lastSyncIso) : null);
+
+                // Try to push any pending local changes in the background
+                syncPendingOverrides();
             } else {
                 showError('Failed to load assignments');
             }
@@ -332,7 +362,6 @@
             overdue: allAssignments.filter(a => a.isOverdue).length,
             completedThisWeek: allAssignments.filter(a => {
                 if (a.status !== 'Completed') return false;
-                // If you have a completedAt timestamp, prefer it. Otherwise rough check by due date in week:
                 const d = parseDue(a);
                 return d && d >= startOfWeek;
             }).length
@@ -554,7 +583,6 @@
         let out = '';
         for (const [label, items] of Object.entries(groups)) {
             out += `<div class="group-header" role="heading" aria-level="2">${label}</div>`;
-            // windowing per group is overkill; items lists are usually small here
             out += items.map(renderAssignmentCard).join('');
         }
         return out;
@@ -568,7 +596,7 @@
 
         const typeClass = (assignment.type || '').toLowerCase().replace(/[\/\s]/g, '-');
 
-        // Due label + pretty date (requested feature)
+        // Due label + pretty date
         let dueClass = 'due-normal';
         const prettyDate = formatDueDate(assignment);
         const dateDot = prettyDate ? ` • <span class="due-date">${prettyDate}</span>` : '';
@@ -590,11 +618,10 @@
 
         const isCompleted = assignment.status === 'Completed';
 
-        // Optional ICS source chip (uses any available field)
+        // Optional ICS source chip
         const source = assignment.source || assignment.calendar || assignment.feed || '';
         const sourceHtml = source ? `<span class="source-chip" title="Source">${String(source).slice(0,16)}</span>` : '';
 
-        // Description uses textContent on expand for safety (XSS guard)
         return `
             <div class="assignment-card ${isCompleted ? 'completed' : ''}"
                  data-type="${assignment.type}" data-uid="${assignment.uid}" role="listitem">
@@ -654,28 +681,80 @@
         }
     }
 
-    // Toggle assignment completion status
+    // === Optimistic Complete / Undo with background sync ===
     async function toggleComplete(uid) {
         const assignment = allAssignments.find(a => a.uid === uid);
         if (!assignment) return;
 
+        // 1) Optimistic local flip (instant)
         const newStatus = assignment.status === 'Completed' ? 'Pending' : 'Completed';
+        assignment.status = newStatus;
 
+        // Persist locally (so it survives refresh/offline)
+        completedOverrides[uid] = { status: newStatus, updatedAt: new Date().toISOString(), needsSync: true };
+        saveOverrides();
+
+        // Update only the affected card (avoid heavy re-render)
+        updateCardUI(uid, newStatus);
+        updateProgress();
+        renderStats(); // cheap
+
+        // 2) Background sync to API (retry if it fails/times out)
         try {
-            const response = await fetch(
-                `${API_URL}?api=true&action=updateStatus&key=${API_KEY}&uid=${uid}&status=${newStatus}`
-            );
-            const data = await response.json();
-
-            if (data.success) {
-                assignment.status = newStatus;
-                applyFilters();   // re-render and refresh stats/progress
-                showFeedback(`Assignment marked as ${newStatus}`);
-            }
-        } catch (error) {
-            console.error('Error updating status:', error);
-            showError('Failed to update status');
+          const res = await fetchWithTimeout(
+            `${API_URL}?api=true&action=updateStatus&key=${API_KEY}&uid=${encodeURIComponent(uid)}&status=${encodeURIComponent(newStatus)}`,
+            {}, 4500
+          );
+          const data = await res.json().catch(() => ({}));
+          if (data && data.success) {
+            // Mark clean
+            if (completedOverrides[uid]) { delete completedOverrides[uid].needsSync; saveOverrides(); }
+            showFeedback(`Assignment ${newStatus === 'Completed' ? 'completed' : 'reopened'}.`);
+          } else {
+            completedOverrides[uid] = { ...(completedOverrides[uid]||{}), needsSync: true };
+            saveOverrides();
+            showFeedback('Saved locally. Will sync when online.');
+          }
+        } catch {
+          completedOverrides[uid] = { ...(completedOverrides[uid]||{}), needsSync: true };
+          saveOverrides();
+          showFeedback('Saved locally. Will sync when online.');
         }
+    }
+
+    function updateCardUI(uid, newStatus) {
+      const card = document.querySelector(`.assignment-card[data-uid="${CSS.escape(uid)}"]`);
+      if (!card) { applyFilters(); return; } // fallback
+
+      card.classList.toggle('completed', newStatus === 'Completed');
+
+      const btn = card.querySelector('.btn-complete');
+      if (btn) {
+        btn.classList.toggle('completed', newStatus === 'Completed');
+        btn.textContent = (newStatus === 'Completed') ? '✔ Completed' : 'Mark Complete';
+        btn.setAttribute('aria-label', (newStatus === 'Completed') ? 'Mark as pending' : 'Mark as completed');
+      }
+    }
+
+    async function syncPendingOverrides() {
+      const entries = Object.entries(completedOverrides).filter(([, v]) => v && v.needsSync);
+      if (!entries.length) return;
+
+      for (const [uid, o] of entries) {
+        try {
+          const res = await fetchWithTimeout(
+            `${API_URL}?api=true&action=updateStatus&key=${API_KEY}&uid=${encodeURIComponent(uid)}&status=${encodeURIComponent(o.status)}`,
+            {}, 4500
+          );
+          const data = await res.json().catch(() => ({}));
+          if (data && data.success) {
+            delete completedOverrides[uid].needsSync;
+            saveOverrides();
+          }
+        } catch {
+          // keep needsSync for next retry
+        }
+      }
     }
 
     // Progress bar
@@ -713,6 +792,8 @@
                         if (renderCount >= filteredAssignments.length) {
                             document.getElementById('loadMoreSentinel').textContent = '';
                         }
+                    } else {
+                        renderAssignments();
                     }
                 }
             }
