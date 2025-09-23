@@ -4,7 +4,36 @@
     <title>Student Assignment Dashboard</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Keep your external stylesheet reference -->
     <link rel="stylesheet" href="css/styles.css">
+    <!-- Small additive styles for new bits -->
+    <style>
+      /* Small, quiet date text inside the due badge */
+      .due-indicator .due-date { opacity: 0.85; font-weight: 600; }
+      /* Header utility row */
+      .header-utilities { margin-top: 8px; display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; }
+      .last-sync { font-size: 12px; opacity: 0.9; padding: 3px 8px; border-radius: 12px; background: rgba(255,255,255,0.2); color: #fff; }
+      .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+      /* New controls row for Sort/Group */
+      .controls { padding: 12px 30px; background: #f8f9fa; border-bottom: 2px solid #e9ecef; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+      .controls .control { display: flex; flex-direction: column; gap: 6px; }
+      .group-header { margin: 18px 0 10px; font-weight: 700; color: #444; border-bottom: 1px solid #e0e0e0; padding-bottom: 4px; }
+      /* Chip for ICS source */
+      .source-chip { display:inline-flex; align-items:center; gap:6px; padding:2px 8px; border-radius:999px; background:#eef2ff; color:#3730a3; font-size:12px; font-weight:700; letter-spacing:.3px; text-transform: uppercase; }
+      /* Accessible focus ring for buttons/links */
+      :is(button,[role="button"],a,select,input):focus { outline: 3px solid #8b92ff; outline-offset: 2px; }
+      /* Virtual list "load more" sentinel */
+      .load-more { text-align:center; color:#6c757d; padding:18px; }
+      /* Make action buttons larger touch targets on mobile */
+      @media (max-width: 768px) {
+        .action-button, .action-btn, .show-more-btn, .toggle-view-btn { padding: 12px 18px; }
+      }
+      /* Dark mode additions */
+      body.dark-mode .source-chip { background:#e0e7ff; color:#312e81; }
+      body.dark-mode .group-header { color:#222; border-bottom-color:#c0c0c0; }
+      body.dark-mode .controls { background:#363644; border-bottom-color:#4a4a5a; }
+      body.dark-mode .last-sync { background: rgba(0,0,0,0.25); }
+    </style>
 </head>
 <body>
     <!-- Main Container -->
@@ -13,30 +42,35 @@
         <div class="header">
             <h1>📚 Student Assignment Tracker</h1>
             <p class="subtitle">Stay on top of schoolwork!</p>
+
+            <div class="header-utilities" aria-live="polite">
+              <span class="last-sync" id="lastSyncBadge" title="Time of last successful sync">Last sync — …</span>
+            </div>
+
             <!-- Dark Mode Toggle Button -->
-            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">
+            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
                 <span class="theme-icon">🌙</span>
                 <span class="theme-text">Dark Mode</span>
             </button>
         </div>
 
         <!-- Stats Summary -->
-        <div class="stats-grid" id="statsGrid">
+        <div class="stats-grid" id="statsGrid" aria-live="polite">
             <!-- Stats will be dynamically inserted here -->
         </div>
 
         <!-- Filters Section -->
-        <div class="filters">
+        <div class="filters" role="region" aria-label="Filters">
             <div class="filter-group">
                 <label for="subjectFilter">Subject:</label>
-                <select id="subjectFilter" onchange="applyFilters()">
+                <select id="subjectFilter" onchange="onFilterChange()" aria-label="Filter by subject">
                     <option value="">All Subjects</option>
                 </select>
             </div>
-            
+
             <div class="filter-group">
                 <label for="typeFilter">Type:</label>
-                <select id="typeFilter" onchange="applyFilters()">
+                <select id="typeFilter" onchange="onFilterChange()" aria-label="Filter by type">
                     <option value="">All Types</option>
                     <option value="Test/Quiz">Tests & Quizzes</option>
                     <option value="Homework">Homework</option>
@@ -45,110 +79,198 @@
                     <option value="Classwork">Classwork</option>
                 </select>
             </div>
-            
+
             <div class="filter-group">
                 <label for="statusFilter">Status:</label>
-                <select id="statusFilter" onchange="applyFilters()">
+                <select id="statusFilter" onchange="onFilterChange()" aria-label="Filter by status">
                     <option value="">All</option>
                     <option value="pending">Pending</option>
                     <option value="completed">Completed</option>
                 </select>
             </div>
-            
+
             <div class="filter-group" style="flex: 1;">
                 <label for="searchInput">Search:</label>
-                <input type="text" id="searchInput" class="search-input" 
-                       placeholder="Search assignments..." onkeyup="applyFilters()">
+                <input type="text" id="searchInput" class="search-input"
+                       placeholder="Search assignments..." aria-label="Search assignments">
             </div>
         </div>
 
+        <!-- Sort / Group controls -->
+        <div class="controls" role="region" aria-label="Sorting and grouping controls">
+          <div class="control">
+            <label for="sortSelect">Sort by:</label>
+            <select id="sortSelect" aria-label="Sort assignments" onchange="onControlChange()">
+              <option value="dueDate-asc">Due date ↑</option>
+              <option value="dueDate-desc">Due date ↓</option>
+              <option value="course-asc">Course A–Z</option>
+              <option value="course-desc">Course Z–A</option>
+              <option value="type-asc">Type A–Z</option>
+              <option value="type-desc">Type Z–A</option>
+            </select>
+          </div>
+          <div class="control">
+            <label for="groupSelect">Group by:</label>
+            <select id="groupSelect" aria-label="Group assignments" onchange="onControlChange()">
+              <option value="none">None</option>
+              <option value="day">Due Day</option>
+              <option value="week">Week</option>
+            </select>
+          </div>
+        </div>
+
         <!-- Quick Actions -->
-        <div class="quick-actions">
-            <button class="action-button" onclick="filterToday()">📅 Today Only</button>
-            <button class="action-button" onclick="filterThisWeek()">📆 This Week</button>
-            <button class="action-button" onclick="filterTests()">📝 Tests Only</button>
-            <button class="action-button" onclick="syncData()">🔄 Sync Data</button>
-            <button class="action-button toggle-view-btn" onclick="toggleCompactView()">📋 Compact View</button>
+        <div class="quick-actions" role="region" aria-label="Quick filters and actions">
+            <button class="action-button" onclick="quickFilter('today')" aria-label="Show assignments due today">📅 Today Only</button>
+            <button class="action-button" onclick="quickFilter('week')" aria-label="Show assignments due this week">📆 This Week</button>
+            <button class="action-button" onclick="quickFilter('tests')" aria-label="Show tests and quizzes only">📝 Tests Only</button>
+            <button class="action-button" id="syncBtn" onclick="syncData()" aria-label="Sync data with server">
+              <span id="syncBtnLabel">🔄 Sync Data</span>
+            </button>
+            <button class="action-button toggle-view-btn" onclick="toggleCompactView()" aria-label="Toggle compact view">📋 Compact View</button>
         </div>
 
         <!-- Progress Bar -->
-        <div class="progress-bar">
+        <div class="progress-bar" aria-hidden="true">
             <div class="progress-container">
                 <div class="progress-fill" id="progressBar">Loading...</div>
             </div>
         </div>
 
         <!-- Assignments List -->
-        <div class="assignments" id="assignmentsList">
+        <div class="assignments" id="assignmentsList" role="list" aria-label="Assignments list">
             <div class="loading">Loading assignments...</div>
         </div>
+        <div class="load-more" id="loadMoreSentinel" aria-hidden="true"></div>
     </div>
 
     <!-- JavaScript -->
     <script>
+    // =========================
     // Configuration
+    // =========================
     const API_URL = 'https://script.google.com/macros/s/AKfycbycbtQwE0m_UhFhUGzjbcZNRMwQsF75YEYTqxeS88UrxZGM_JYlg7ruoLCBYELsyKe2Pw/exec';
     const API_KEY = 'Patio-Slingshot-Gloater-Neglector-Brick1-Catcall-Legible';
-    
-    // Global variables
+
+    // =========================
+    // State
+    // =========================
     let allAssignments = [];
     let filteredAssignments = [];
     let isCompactView = false;
 
-    // Initialize on page load
+    // Sort/Group state
+    let sortKey = 'dueDate'; // 'dueDate' | 'course' | 'type'
+    let sortDir = 'asc';     // 'asc' | 'desc'
+    let groupBy = 'none';    // 'none' | 'day' | 'week'
+
+    // Virtual list state
+    const PAGE_SIZE = 50;
+    let renderCount = PAGE_SIZE;
+
+    // Debouncer
+    function debounce(fn, delay=200) {
+      let t;
+      return (...args) => {
+        clearTimeout(t);
+        t = setTimeout(() => fn.apply(this, args), delay);
+      };
+    }
+
+    // Date helpers (Intl everywhere)
+    const fmtDay = new Intl.DateTimeFormat(undefined, { weekday:'short', month:'short', day:'numeric' });
+    const fmtWeek = new Intl.DateTimeFormat(undefined, { month:'short', day:'numeric' });
+    const fmtTime = new Intl.DateTimeFormat(undefined, { hour:'numeric', minute:'2-digit' });
+
+    function parseDue(assignment) {
+      const src = assignment.dueDate ?? assignment.due ?? assignment.due_at ?? null;
+      if (src) {
+        const d = new Date(src);
+        if (!isNaN(d)) return d;
+        try { const dd = new Date(String(src).replace(/-/g,'/')); if (!isNaN(dd)) return dd; } catch {}
+      }
+      if (Number.isFinite(assignment.daysUntilDue)) {
+        const now = new Date();
+        const d = new Date(now);
+        d.setDate(now.getDate() + assignment.daysUntilDue);
+        return d;
+      }
+      return null;
+    }
+
+    function formatDueDate(assignment) {
+        const d = parseDue(assignment);
+        return d ? fmtDay.format(d) : '';
+    }
+
+    // =========================
+    // Init
+    // =========================
     document.addEventListener('DOMContentLoaded', function() {
-        loadAssignments();
-        setupEventListeners();
-        
-        // Check for saved theme preference
+        // Theme
         const savedTheme = localStorage.getItem('theme') || 'light';
         if (savedTheme === 'dark') {
             document.body.classList.add('dark-mode');
             updateThemeToggle(true);
         }
-        
-        // Check for saved compact view preference
+
+        // Compact view
         if (localStorage.getItem('compactView') === 'true') {
+            isCompactView = false; // toggleCompactView will flip it
             toggleCompactView();
         }
+
+        // Restore filters/controls
+        restoreControls();
+
+        // Load data
+        loadAssignments();
+
+        // Set up listeners
+        setupEventListeners();
+
+        // Debounce search input -> applyFilters
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', debounce(onFilterChange, 200));
     });
 
-    // Toggle theme function
+    // =========================
+    // Theme
+    // =========================
     function toggleTheme() {
         const isDark = document.body.classList.toggle('dark-mode');
         localStorage.setItem('theme', isDark ? 'dark' : 'light');
         updateThemeToggle(isDark);
     }
-
-    // Update theme toggle button
     function updateThemeToggle(isDark) {
         const toggle = document.getElementById('themeToggle');
         const icon = toggle.querySelector('.theme-icon');
         const text = toggle.querySelector('.theme-text');
-        
-        if (isDark) {
-            icon.textContent = '☀️';
-            text.textContent = 'Light Mode';
-        } else {
-            icon.textContent = '🌙';
-            text.textContent = 'Dark Mode';
-        }
+        if (isDark) { icon.textContent = '☀️'; text.textContent = 'Light Mode'; }
+        else { icon.textContent = '🌙'; text.textContent = 'Dark Mode'; }
     }
 
-    // Load assignments from API
+    // =========================
+    // Data load & sync
+    // =========================
     async function loadAssignments() {
         try {
             const response = await fetch(`${API_URL}?api=true&action=getAssignments&key=${API_KEY}`);
             const data = await response.json();
-            
+
             if (data.success) {
-                allAssignments = data.data;
+                allAssignments = data.data || [];
                 filteredAssignments = [...allAssignments];
-                
-                renderStats();
-                renderAssignments();
-                updateProgress();
+
+                // Render UI
                 populateFilters();
+                applyFilters();   // this will also sort/group and render
+                renderStats();
+                updateProgress();
+
+                // Update last sync badge if we have it saved
+                const lastSyncIso = localStorage.getItem('lastSyncISO');
+                updateLastSyncBadge(lastSyncIso ? new Date(lastSyncIso) : null);
             } else {
                 showError('Failed to load assignments');
             }
@@ -158,19 +280,75 @@
         }
     }
 
-    // Render statistics summary
+    async function syncData() {
+        const btn = document.getElementById('syncBtn');
+        const label = document.getElementById('syncBtnLabel');
+        btn.disabled = true;
+        label.textContent = '⏳ Syncing…';
+
+        try {
+            const response = await fetch(`${API_URL}?api=true&action=sync&key=${API_KEY}`);
+            const data = await response.json();
+
+            if (data.success) {
+                const now = new Date();
+                localStorage.setItem('lastSyncISO', now.toISOString());
+                updateLastSyncBadge(now);
+
+                showFeedback('Sync complete! Reloading…');
+                // Reload fresh data
+                await loadAssignments();
+            } else {
+                showError('Sync failed');
+            }
+        } catch (error) {
+            console.error('Sync error:', error);
+            showError('Failed to sync data');
+        } finally {
+            btn.disabled = false;
+            label.textContent = '🔄 Sync Data';
+        }
+    }
+
+    function updateLastSyncBadge(dateObj) {
+        const el = document.getElementById('lastSyncBadge');
+        if (!dateObj || isNaN(dateObj)) { el.textContent = 'Last sync — never'; return; }
+        el.textContent = `Last sync — ${fmtDay.format(dateObj)} · ${fmtTime.format(dateObj)}`;
+    }
+
+    // =========================
+    // Stats
+    // =========================
     function renderStats() {
+        const now = new Date();
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday as start
+
         const stats = {
             dueToday: allAssignments.filter(a => a.isDueToday).length,
             dueThisWeek: allAssignments.filter(a => a.isDueThisWeek).length,
             completed: allAssignments.filter(a => a.status === 'Completed').length,
             tests: allAssignments.filter(a => a.isTestQuiz).length,
             overdue: allAssignments.filter(a => a.isOverdue).length,
-            total: allAssignments.length
+            completedThisWeek: allAssignments.filter(a => {
+                if (a.status !== 'Completed') return false;
+                // If you have a completedAt timestamp, prefer it. Otherwise rough check by due date in week:
+                const d = parseDue(a);
+                return d && d >= startOfWeek;
+            }).length
         };
-        
+
+        // Overdue by subject (top subject)
+        const overdueBySubject = {};
+        allAssignments.forEach(a => {
+            if (a.isOverdue) {
+                overdueBySubject[a.course] = (overdueBySubject[a.course] || 0) + 1;
+            }
+        });
+        const topOverdue = Object.entries(overdueBySubject).sort((a,b)=>b[1]-a[1])[0];
+
         const statsHtml = `
-            <div class="stat-card">
+            <div class="stat-card" role="status" aria-live="polite">
                 <div class="stat-number">${stats.dueToday}</div>
                 <div class="stat-label">Due Today</div>
             </div>
@@ -186,105 +364,271 @@
                 <div class="stat-number">${stats.tests}</div>
                 <div class="stat-label">Tests/Quizzes</div>
             </div>
+            <div class="stat-card">
+                <div class="stat-number">${stats.completedThisWeek}</div>
+                <div class="stat-label">Completed This Week</div>
+            </div>
             ${stats.overdue > 0 ? `
             <div class="stat-card stat-overdue">
                 <div class="stat-number">${stats.overdue}</div>
-                <div class="stat-label">Overdue</div>
+                <div class="stat-label">Overdue${topOverdue ? ` • ${topOverdue[0]} (${topOverdue[1]})` : ''}</div>
             </div>` : ''}
         `;
-        
         document.getElementById('statsGrid').innerHTML = statsHtml;
     }
 
-    // Render assignments list
+    // =========================
+    // Filters, Sort & Group
+    // =========================
+    function populateFilters() {
+        const subjects = [...new Set(allAssignments.map(a => a.course))].sort();
+        const subjectFilter = document.getElementById('subjectFilter');
+        subjectFilter.innerHTML = '<option value="">All Subjects</option>';
+        subjects.forEach(subject => {
+            const option = document.createElement('option');
+            option.value = subject;
+            option.textContent = subject;
+            subjectFilter.appendChild(option);
+        });
+
+        // Restore filter selections if persisted
+        restoreSelectValue('subjectFilter');
+    }
+
+    function onFilterChange() {
+        persistFilters();
+        applyFilters();
+    }
+
+    function onControlChange() {
+        const sel = document.getElementById('sortSelect').value; // e.g., "dueDate-asc"
+        [sortKey, sortDir] = sel.split('-');
+        groupBy = document.getElementById('groupSelect').value;
+        localStorage.setItem('sortSelect', sel);
+        localStorage.setItem('groupSelect', groupBy);
+        applyFilters();
+    }
+
+    function persistFilters() {
+        localStorage.setItem('subjectFilter', document.getElementById('subjectFilter').value);
+        localStorage.setItem('typeFilter', document.getElementById('typeFilter').value);
+        localStorage.setItem('statusFilter', document.getElementById('statusFilter').value);
+        localStorage.setItem('searchInput', document.getElementById('searchInput').value);
+    }
+
+    function restoreControls() {
+        restoreSelectValue('typeFilter');
+        restoreSelectValue('statusFilter');
+        const search = localStorage.getItem('searchInput');
+        if (search !== null) document.getElementById('searchInput').value = search;
+        const sortSel = localStorage.getItem('sortSelect');
+        if (sortSel) {
+          document.getElementById('sortSelect').value = sortSel;
+          [sortKey, sortDir] = sortSel.split('-');
+        }
+        const grpSel = localStorage.getItem('groupSelect');
+        if (grpSel) {
+          document.getElementById('groupSelect').value = grpSel;
+          groupBy = grpSel;
+        }
+    }
+
+    function restoreSelectValue(id) {
+        const v = localStorage.getItem(id);
+        if (v !== null) {
+            const el = document.getElementById(id);
+            const match = [...el.options].find(o => o.value === v);
+            if (match) el.value = v;
+        }
+    }
+
+    function applyFilters() {
+        const subject = document.getElementById('subjectFilter').value;
+        const type = document.getElementById('typeFilter').value;
+        const status = document.getElementById('statusFilter').value;
+        const search = document.getElementById('searchInput').value.toLowerCase();
+
+        filteredAssignments = allAssignments.filter(assignment => {
+            if (subject && assignment.course !== subject) return false;
+            if (type && assignment.type !== type) return false;
+            if (status === 'pending' && assignment.status === 'Completed') return false;
+            if (status === 'completed' && assignment.status !== 'Completed') return false;
+
+            if (search) {
+              const hay = `${assignment.title} ${assignment.course} ${assignment.type} ${assignment.description||''}`.toLowerCase();
+              if (!hay.includes(search)) return false;
+            }
+            return true;
+        });
+
+        // Sort
+        const dir = (sortDir === 'asc') ? 1 : -1;
+        filteredAssignments.sort((a,b) => {
+          if (sortKey === 'dueDate') {
+            const da = parseDue(a); const db = parseDue(b);
+            const va = da ? da.getTime() : Number.POSITIVE_INFINITY;
+            const vb = db ? db.getTime() : Number.POSITIVE_INFINITY;
+            return (va - vb) * dir;
+          } else if (sortKey === 'course') {
+            return (a.course || '').localeCompare(b.course || '') * dir;
+          } else if (sortKey === 'type') {
+            return (a.type || '').localeCompare(b.type || '') * dir;
+          }
+          return 0;
+        });
+
+        // Reset virtual list
+        renderCount = PAGE_SIZE;
+
+        renderAssignments(); // handles grouping & windowing
+        updateProgress();
+        renderStats(); // optional refresh
+    }
+
+    function quickFilter(which) {
+        if (which === 'today') {
+            filteredAssignments = allAssignments.filter(a => a.isDueToday);
+        } else if (which === 'week') {
+            filteredAssignments = allAssignments.filter(a => a.isDueThisWeek);
+        } else if (which === 'tests') {
+            filteredAssignments = allAssignments.filter(a => a.isTestQuiz);
+        }
+        // Keep sort/group as-is
+        renderCount = PAGE_SIZE;
+        renderAssignments();
+        updateProgress();
+    }
+
+    // =========================
+    // Rendering
+    // =========================
     function renderAssignments() {
         const container = document.getElementById('assignmentsList');
-        
+
         if (filteredAssignments.length === 0) {
             container.innerHTML = '<div class="no-assignments">No assignments found</div>';
             return;
         }
-        
-        const assignmentsHtml = filteredAssignments.map(assignment => 
-            renderAssignmentCard(assignment)
-        ).join('');
-        
-        container.innerHTML = assignmentsHtml;
+
+        // Group if needed
+        if (groupBy !== 'none') {
+            container.innerHTML = renderGrouped();
+            return;
+        }
+
+        // Virtual list (simple windowing by count)
+        const slice = filteredAssignments.slice(0, renderCount);
+        const html = slice.map(renderAssignmentCard).join('');
+        container.innerHTML = html;
+
+        // If more remain, show sentinel text
+        const sentinel = document.getElementById('loadMoreSentinel');
+        sentinel.textContent = (renderCount < filteredAssignments.length) ? 'Scroll to load more…' : '';
     }
 
-    // Render individual assignment card
+    function renderGrouped() {
+        // Build groups
+        let groups = {};
+        if (groupBy === 'day') {
+            filteredAssignments.forEach(a => {
+                const key = formatDueDate(a) || 'No Date';
+                (groups[key] ||= []).push(a);
+            });
+        } else if (groupBy === 'week') {
+            filteredAssignments.forEach(a => {
+                const d = parseDue(a);
+                let key = 'No Date';
+                if (d) {
+                    // Week range label (Sun–Sat)
+                    const start = new Date(d);
+                    start.setDate(d.getDate() - d.getDay());
+                    const end = new Date(start);
+                    end.setDate(start.getDate() + 6);
+                    key = `${fmtWeek.format(start)} – ${fmtWeek.format(end)}`;
+                }
+                (groups[key] ||= []).push(a);
+            });
+        }
+
+        // Render groups
+        let out = '';
+        for (const [label, items] of Object.entries(groups)) {
+            out += `<div class="group-header" role="heading" aria-level="2">${label}</div>`;
+            // windowing per group is overkill; items lists are usually small here
+            out += items.map(renderAssignmentCard).join('');
+        }
+        return out;
+    }
+
     function renderAssignmentCard(assignment) {
-        // Truncate description
         const maxLength = isCompactView ? 100 : 150;
-        const description = assignment.description || 'No description provided';
-        const isTruncated = description.length > maxLength;
-        const truncatedDesc = isTruncated ? 
-            description.substring(0, maxLength) + '...' : description;
-        
-        // Determine type class
-        const typeClass = assignment.type.toLowerCase().replace(/[\/\s]/g, '-');
-        
-        // Determine due date styling
+        const desc = assignment.description || 'No description provided';
+        const isTruncated = desc.length > maxLength;
+        const truncatedDesc = isTruncated ? desc.substring(0, maxLength) + '…' : desc;
+
+        const typeClass = (assignment.type || '').toLowerCase().replace(/[\/\s]/g, '-');
+
+        // Due label + pretty date (requested feature)
         let dueClass = 'due-normal';
-        let dueLabel = `📅 ${assignment.daysUntilDue} days`;
-        
-        if (assignment.isDueToday) {
+        const prettyDate = formatDueDate(assignment);
+        const dateDot = prettyDate ? ` • <span class="due-date">${prettyDate}</span>` : '';
+
+        let dueLabel = `📅 Due in ${assignment.daysUntilDue} days${dateDot}`;
+        if (assignment.isOverdue) {
             dueClass = 'due-today';
-            dueLabel = '⚠️ Due Today';
+            dueLabel = `❌ Overdue${dateDot}`;
+        } else if (assignment.isDueToday) {
+            dueClass = 'due-today';
+            dueLabel = `⚠️ Due Today${dateDot}`;
         } else if (assignment.isDueTomorrow) {
             dueClass = 'due-tomorrow';
-            dueLabel = '⏰ Due Tomorrow';
+            dueLabel = `⏰ Due Tomorrow${dateDot}`;
         } else if (assignment.daysUntilDue <= 3) {
             dueClass = 'due-soon';
-            dueLabel = `📅 ${assignment.daysUntilDue} days`;
-        } else if (assignment.isOverdue) {
-            dueClass = 'due-today';
-            dueLabel = '❌ Overdue';
+            dueLabel = `📅 Due in ${assignment.daysUntilDue} days${dateDot}`;
         }
-        
+
         const isCompleted = assignment.status === 'Completed';
-        
+
+        // Optional ICS source chip (uses any available field)
+        const source = assignment.source || assignment.calendar || assignment.feed || '';
+        const sourceHtml = source ? `<span class="source-chip" title="Source">${String(source).slice(0,16)}</span>` : '';
+
+        // Description uses textContent on expand for safety (XSS guard)
         return `
-            <div class="assignment-card ${isCompleted ? 'completed' : ''}" 
-                 data-type="${assignment.type}" data-uid="${assignment.uid}">
+            <div class="assignment-card ${isCompleted ? 'completed' : ''}"
+                 data-type="${assignment.type}" data-uid="${assignment.uid}" role="listitem">
                 <div class="assignment-header">
                     <h3 class="assignment-title">${assignment.title}</h3>
                     <div class="assignment-meta">
-                        <span class="meta-item">
-                            📚 ${assignment.course}
-                        </span>
-                        <span class="type-badge ${typeClass}">
-                            ${assignment.type}
-                        </span>
-                        <span class="due-indicator ${dueClass}">
-                            ${dueLabel}
-                        </span>
-                        ${assignment.priority !== 'Normal' ? 
-                            `<span class="priority-indicator priority-${assignment.priority.toLowerCase()}">
-                                ⚡ ${assignment.priority}
-                            </span>` : ''
+                        <span class="meta-item">📚 ${assignment.course}</span>
+                        ${sourceHtml}
+                        <span class="type-badge ${typeClass}">${assignment.type}</span>
+                        <span class="due-indicator ${dueClass}">${dueLabel}</span>
+                        ${assignment.priority && assignment.priority !== 'Normal'
+                          ? `<span class="priority-indicator priority-${(assignment.priority||'').toLowerCase()}">⚡ ${assignment.priority}</span>`
+                          : ''
                         }
                     </div>
                 </div>
-                
+
                 <div class="assignment-description">
-                    <div class="description-content ${isTruncated ? 'truncated' : ''}" 
-                         id="desc-${assignment.uid}">
-                        ${truncatedDesc}
-                    </div>
-                    ${isTruncated ? 
-                        `<button class="show-more-btn" 
-                                onclick="toggleDescription('${assignment.uid}', this)"
-                                data-full="${encodeURIComponent(description)}"
-                                data-truncated="${encodeURIComponent(truncatedDesc)}">
+                    <div class="description-content ${isTruncated ? 'truncated' : ''}"
+                         id="desc-${assignment.uid}">${truncatedDesc.replace(/</g, "&lt;")}</div>
+                    ${isTruncated ?
+                        `<button class="show-more-btn" aria-expanded="false"
+                                 onclick="toggleDescription('${assignment.uid}', this)"
+                                 data-full="${encodeURIComponent(desc)}"
+                                 data-truncated="${encodeURIComponent(truncatedDesc)}">
                             Show more ▼
-                        </button>` : ''
+                         </button>` : ''
                     }
                 </div>
-                
+
                 <div class="assignment-actions">
                     <button class="action-btn btn-complete ${isCompleted ? 'completed' : ''}"
-                            onclick="toggleComplete('${assignment.uid}')">
+                            onclick="toggleComplete('${assignment.uid}')"
+                            aria-label="${isCompleted ? 'Mark as pending' : 'Mark as completed'}">
                         ${isCompleted ? '✔ Completed' : 'Mark Complete'}
                     </button>
                 </div>
@@ -292,21 +636,21 @@
         `;
     }
 
-    // Toggle description expansion
+    // Safer description expansion (textContent)
     function toggleDescription(uid, button) {
         const descElement = document.getElementById(`desc-${uid}`);
         const isExpanded = !descElement.classList.contains('truncated');
-        
+
         if (isExpanded) {
-            // Collapse
             descElement.classList.add('truncated');
             descElement.textContent = decodeURIComponent(button.getAttribute('data-truncated'));
             button.textContent = 'Show more ▼';
+            button.setAttribute('aria-expanded', 'false');
         } else {
-            // Expand
             descElement.classList.remove('truncated');
             descElement.textContent = decodeURIComponent(button.getAttribute('data-full'));
             button.textContent = 'Show less ▲';
+            button.setAttribute('aria-expanded', 'true');
         }
     }
 
@@ -314,20 +658,18 @@
     async function toggleComplete(uid) {
         const assignment = allAssignments.find(a => a.uid === uid);
         if (!assignment) return;
-        
+
         const newStatus = assignment.status === 'Completed' ? 'Pending' : 'Completed';
-        
+
         try {
             const response = await fetch(
                 `${API_URL}?api=true&action=updateStatus&key=${API_KEY}&uid=${uid}&status=${newStatus}`
             );
             const data = await response.json();
-            
+
             if (data.success) {
                 assignment.status = newStatus;
-                renderAssignments();
-                updateProgress();
-                renderStats();
+                applyFilters();   // re-render and refresh stats/progress
                 showFeedback(`Assignment marked as ${newStatus}`);
             }
         } catch (error) {
@@ -336,121 +678,76 @@
         }
     }
 
-    // Update progress bar
+    // Progress bar
     function updateProgress() {
         const total = filteredAssignments.length;
         const completed = filteredAssignments.filter(a => a.status === 'Completed').length;
         const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-        
         const progressBar = document.getElementById('progressBar');
         progressBar.style.width = `${percentage}%`;
         progressBar.textContent = `${completed}/${total} Complete (${percentage}%)`;
     }
 
-    // Populate filter dropdowns
-    function populateFilters() {
-        // Subject filter
-        const subjects = [...new Set(allAssignments.map(a => a.course))].sort();
-        const subjectFilter = document.getElementById('subjectFilter');
-        subjects.forEach(subject => {
-            const option = document.createElement('option');
-            option.value = subject;
-            option.textContent = subject;
-            subjectFilter.appendChild(option);
-        });
-    }
-
-    // Apply filters
-    function applyFilters() {
-        const subject = document.getElementById('subjectFilter').value;
-        const type = document.getElementById('typeFilter').value;
-        const status = document.getElementById('statusFilter').value;
-        const search = document.getElementById('searchInput').value.toLowerCase();
-        
-        filteredAssignments = allAssignments.filter(assignment => {
-            if (subject && assignment.course !== subject) return false;
-            if (type && assignment.type !== type) return false;
-            if (status === 'pending' && assignment.status === 'Completed') return false;
-            if (status === 'completed' && assignment.status !== 'Completed') return false;
-            if (search && !assignment.title.toLowerCase().includes(search) && 
-                !assignment.course.toLowerCase().includes(search)) return false;
-            return true;
-        });
-        
-        renderAssignments();
-        updateProgress();
-    }
-
-    // Quick filter functions
-    function filterToday() {
-        filteredAssignments = allAssignments.filter(a => a.isDueToday);
-        renderAssignments();
-        updateProgress();
-    }
-
-    function filterThisWeek() {
-        filteredAssignments = allAssignments.filter(a => a.isDueThisWeek);
-        renderAssignments();
-        updateProgress();
-    }
-
-    function filterTests() {
-        filteredAssignments = allAssignments.filter(a => a.isTestQuiz);
-        renderAssignments();
-        updateProgress();
-    }
-
-    // Sync data
-    async function syncData() {
-        showFeedback('Syncing data...');
-        
-        try {
-            const response = await fetch(`${API_URL}?api=true&action=sync&key=${API_KEY}`);
-            const data = await response.json();
-            
-            if (data.success) {
-                showFeedback('Sync complete! Reloading...');
-                setTimeout(() => loadAssignments(), 1500);
-            } else {
-                showError('Sync failed');
-            }
-        } catch (error) {
-            console.error('Sync error:', error);
-            showError('Failed to sync data');
-        }
-    }
-
-    // Toggle compact view
-    function toggleCompactView() {
-        isCompactView = !isCompactView;
-        document.body.classList.toggle('compact-view');
-        localStorage.setItem('compactView', isCompactView);
-        renderAssignments();
-    }
-
-    // Setup event listeners
+    // =========================
+    // Events (virtual list scroll)
+    // =========================
     function setupEventListeners() {
         // Refresh data every 5 minutes
         setInterval(loadAssignments, 5 * 60 * 1000);
+
+        // Simple "infinite scroll": when near the bottom, increase renderCount
+        window.addEventListener('scroll', () => {
+            const sentinel = document.getElementById('loadMoreSentinel');
+            if (!sentinel.textContent) return; // nothing more to load
+            const rect = sentinel.getBoundingClientRect();
+            if (rect.top < window.innerHeight + 150) {
+                const more = Math.min(filteredAssignments.length, renderCount + PAGE_SIZE);
+                if (more > renderCount) {
+                    renderCount = more;
+                    // Re-render only the list section (no grouping case)
+                    if (groupBy === 'none') {
+                        const container = document.getElementById('assignmentsList');
+                        const slice = filteredAssignments.slice(0, renderCount);
+                        const html = slice.map(renderAssignmentCard).join('');
+                        container.innerHTML = html;
+                        if (renderCount >= filteredAssignments.length) {
+                            document.getElementById('loadMoreSentinel').textContent = '';
+                        }
+                    }
+                }
+            }
+        });
     }
 
-    // Show feedback message
+    // =========================
+    // UI feedback & errors
+    // =========================
     function showFeedback(message) {
         const existing = document.querySelector('.feedback-message');
         if (existing) existing.remove();
-        
+
         const feedback = document.createElement('div');
         feedback.className = 'feedback-message';
         feedback.textContent = message;
         document.body.appendChild(feedback);
-        
+
         setTimeout(() => feedback.remove(), 3000);
     }
 
-    // Show error message
     function showError(message) {
         const container = document.getElementById('assignmentsList');
         container.innerHTML = `<div class="error">❌ ${message}</div>`;
+    }
+
+    // =========================
+    // Compact View
+    // =========================
+    function toggleCompactView() {
+        isCompactView = !isCompactView;
+        document.body.classList.toggle('compact-view');
+        localStorage.setItem('compactView', isCompactView);
+        // Just re-render cards (respecting current filter window)
+        renderAssignments();
     }
     </script>
 </body>
